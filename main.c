@@ -41,7 +41,7 @@ int main()
     net_weights weights = {};
     read_weights(&weights, "seed1");
 
-    smp_search(&search, 8, &weights);
+    smp_search(&search, 2, &weights);
 
     time_t start_s, end_s;
     clock_t start, end;

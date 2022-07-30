@@ -344,38 +344,42 @@ int quick_search(search_state *search, board_state *board, const int depth, cons
 void smp_search(search_state *search, const int max_depth, const net_weights *weights)
 {
     pthread_t threads[max_depth];
-    negamax_params searches[max_depth];
+    negamax_params *searches[max_depth];
 
     for (int i = 0; i < max_depth; i++)
     {
-        searches[i].search = search;
-        searches[i].alpha = -infinity;
-        searches[i].beta = infinity;
-        searches[i].depth = i;
-        searches[i].weights = weights;
+        searches[i]->search = search;
+        searches[i]->alpha = -infinity;
+        searches[i]->beta = infinity;
+        searches[i]->depth = i + 1;
+        searches[i]->weights = weights;
 
-        pthread_create(&threads[i], NULL, lazy_negamax, searches);
+        pthread_create(&threads[i], NULL, lazy_negamax, searches[i]);
         printf("created pthread\n");
     }
-
+    printf("finished creating threads");
     for (int i = 0; i < max_depth; i++)
         pthread_join(threads[i], NULL);
-    
+    printf("joined all threads\n");
     printf("bestmove ");
-    print_move(searches[max_depth].search->pv_table[0][0]);
+    print_move(searches[max_depth-1]->search->pv_table[0][0]);
     printf("\n");
 
 }
 
 void *lazy_negamax(void *params)
 {
+    printf("creating parameters\n");
     negamax_params *nparams = params;
     search_state *search = nparams->search;
     const int alpha = nparams->alpha;
     const int beta = nparams->beta;
     int depth = nparams->depth;
     const net_weights *weights = nparams->weights;
-
+    printf("starting search at depth %d\n", depth);
     int score = negamax(search, alpha, beta, depth, weights);
-    printf("finished search\n");
+    printf("finished search at depth %d\n", depth);
+    printf("bestmove ");
+    print_move(search->pv_table[0][0]);
+    printf("\n");
 }
