@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "search.h"
 #include "board.h"
@@ -86,7 +87,6 @@ int negamax(search_state *search, const int alpha, const int beta, int depth, co
     int hash_flag = hash_flag_alpha;
     
     int pv_node = (beta - alpha > 1);
-
     if (search->ply && (score = read_shared_entry(board, alpha, beta, depth, search->ply)) != no_hash_entry && !pv_node)
     {
         return score;
@@ -95,8 +95,9 @@ int negamax(search_state *search, const int alpha, const int beta, int depth, co
     // initialize pv length
     search->pv_length[search->ply] = search->ply;
 
-    if (depth <= 0)         // base case
+    if (depth <= 0) {       // base case
         return quiescence(search, alpha, beta, weights);
+    }
     
     ++search->neg_nodes;
 
@@ -341,29 +342,54 @@ int quick_search(search_state *search, board_state *board, const int depth, cons
     return search->pv_table[0][0];
 }
 
-void smp_search(search_state *search, const int max_depth, const net_weights *weights)
+void smp_search(board_state *board, const int threads, const int depth, const net_weights *weights)
 {
-    pthread_t threads[max_depth];
-    negamax_params *searches[max_depth];
-
-    for (int i = 0; i < max_depth; i++)
+    pthread_t pthreads[threads];
+    negamax_params *searches[threads];
+    
+    for (int i = 1; i <= threads; i++)
     {
-        searches[i]->search = search;
-        searches[i]->alpha = -infinity;
-        searches[i]->beta = infinity;
-        searches[i]->depth = i + 1;
-        searches[i]->weights = weights;
+        // deep copy board state
+        board_state *board_copy = calloc(1, sizeof(board_state));
+        memcpy(board_copy, board, sizeof(board_state));
 
-        pthread_create(&threads[i], NULL, lazy_negamax, searches[i]);
-        printf("created pthread\n");
+        searches[i-1] = calloc(1, sizeof(negamax_params));
+        searches[i-1]->search = calloc(1, sizeof(search_state));
+        search_state *search = searches[i-1]->search;
+        search->ply = 0;
+        search->best_move = 0;
+        search->neg_nodes = 0;
+        search->killer_moves[2][max_ply];
+        search->history_moves[12][64];
+        search->pv_length[max_ply];
+        search->pv_table[max_ply][max_ply];
+        search->follow_pv = 0;
+        search->score_pv = 0;
+        search->full_depth_moves = 0;
+        search->reduction_limit = 0;
+        searches[i-1]->search->board = board_copy;
+        searches[i-1]->alpha = -infinity;
+        searches[i-1]->beta = infinity;
+        searches[i-1]->depth = depth + 1 + __builtin_ctz(i);
+        searches[i-1]->weights = weights;
+
+        pthread_create(&pthreads[i-1], NULL, lazy_negamax, (void *) &searches[i-1]);
+        printf("created pthread searching at depth %d\n", searches[i-1]->depth);
     }
-    printf("finished creating threads");
-    for (int i = 0; i < max_depth; i++)
-        pthread_join(threads[i], NULL);
+    printf("finished creating threads\n");
+    for (int i = 0; i < threads; i++) {
+        pthread_join(pthreads[i], NULL);
+    }
     printf("joined all threads\n");
     printf("bestmove ");
-    print_move(searches[max_depth-1]->search->pv_table[0][0]);
+    print_move(searches[threads-1]->search->pv_table[0][0]);
     printf("\n");
+
+    for (int i = 0; i < threads; i++){
+        free(searches[i]->search->board);
+        free(searches[i]->search);
+        free(searches[i]);
+    }
 
 }
 

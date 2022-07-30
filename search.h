@@ -54,7 +54,7 @@ int quick_search(search_state *search, board_state *board, const int depth, cons
 // enable PV mopve scoring
 void enable_pv_scoring(search_state *search, move_list *moves);
 
-void smp_search(search_state *search, const int max_depth, const net_weights *weights);
+void smp_search(board_state *board, const int threads, const int depth, const net_weights *weights);
 
 void *lazy_negamax(void *params);
 

@@ -63,7 +63,7 @@ void save_weights(const net_weights *weights, const char *dir_path)
     // make sure directory exists
     struct stat st;
     if (stat(dir_path, &st) == -1)
-        mkdir(dir_path);
+        mkdir(dir_path, 0700 );
 
     // save weights
     char file_path[100];
