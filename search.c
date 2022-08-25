@@ -91,7 +91,7 @@ int negamax(search_state *search, const int alpha, const int beta, int depth, co
     ++search->neg_nodes;
 
     if (search->ply >= max_ply)     // too deep, danger of exceeding arrays
-        return net_eval(board, weights);
+        return weights ? net_eval(board, weights) : evaluate(board);
 
     // if in check, increase search depth
     int in_check = square_attacked(board, ls1b(board->bitboards[(board->side==white) ? K : k]), (board->side)^1);
@@ -216,7 +216,7 @@ int negamax(search_state *search, const int alpha, const int beta, int depth, co
 int quiescence(search_state *search, const int alpha, const int beta, const net_weights *weights)
 {
     ++search->neg_nodes;
-    int evaluation = net_eval(search->board, weights);
+    int evaluation = (weights ? net_eval(search->board, weights) : evaluate(search->board));
 
     if (evaluation >= beta) return beta;                // failed hard beta cutoff
     int new_alpha = alpha;

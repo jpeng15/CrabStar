@@ -10,6 +10,7 @@
 
 // returns result of match between player1 (white) and player2 (black)
 // small bonus for using fewer nodes
+// if net_weights = null, use hard-coded evaluation
 int single_match(const net_weights *player1, const net_weights *player2, const char *start_fen, const int depth,
             const int verbose)
 {
@@ -56,6 +57,8 @@ int single_match(const net_weights *player1, const net_weights *player2, const c
             winner = (square_attacked(&board, ls1b(board.bitboards[K]), black) ? -1 : 0);
             break;
         }
+
+        if (verbose && move_count % 10 == 0) print_board(&board);
     }
     // print_board(&board);
     return winner;
